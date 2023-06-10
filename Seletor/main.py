@@ -1,6 +1,6 @@
 from database import Database
 from seletor import Seletor
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 
 def criaTabela():
     db = Database()
@@ -15,15 +15,23 @@ seletor = Seletor()
 
 app = Flask(__name__)
 
+def telaErro(mensagem:str):
+    return render_template('erro.html', erro=mensagem)
+
 @app.route('/validador/<int:qtdMoedas>/<string:ip>', methods=["POST"])
 def cadastrarValidador(qtdMoedas, ip):
-    validador = None
-    try:
-        validador = seletor.novoValidador(qtdMoedas, ip)
-    except Exception as e:
-        return render_template('erro.html', erro=str(e))
+    if request.method == "POST":
+        if qtdMoedas >= 100:
+            try:
+                validador = seletor.novoValidador(qtdMoedas, ip)
+            except Exception as e:
+                return telaErro(str(e))
 
-    return validador.toJson()
+            return validador.toJson()
+        else:
+            return telaErro("Quantidade de FCoins insuficiente")
+    else:
+        return telaErro("Metodo invalido")
 
 @app.errorhandler(404)
 def page_not_found():
