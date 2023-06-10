@@ -76,18 +76,50 @@ class Validador:
             
         return Validador(id=ret[0], qtd_moeda=ret[1], qtd_flags=ret[2], ip=ret[3])
 
-# quantidade total de moedas no seletor
-total_moedas_seletor = 0
+
+class Seletor:
+    total_moedas:int
+    validadores:list[Validador]
+    
+    def __init__(self):
+        self.resgatarValidadores()
+        self.resgatarTotalMoedas()
+    
+    def resgatarValidadores(self):
+        db = Database()
+        query = "SELECT id FROM VALIDADORES"
+        
+        ids = db.execute(query=query).fetchall()
+        for i in ids:
+            validador = Validador.buscarUmDb(i)
+            self.validadores.append(validador)
+    
+    def resgatarTotalMoedas(self):
+        db = Database()
+        query = "SELECT total_moedas FROM SELETOR"
+        self.total_moedas = db.execute(query=query).fetchone()[0]
+        
+    def atualizarTotalMoedas(self, moedas):
+        db = Database()
+        query = "UPDATE SELETOR SET total_moedas = ?"
+        param = [moedas]
+        db.execute(query=query, param=param)
+        db.save()
+
 
 def criaTabela():
     db = Database()
-    query = "CREATE TABLE VALIDADORES (id INTEGER, qtd_moeda INTEGER, qtd_flags INTEGER, ip VARCHAR(15)"
+    query = [
+        "CREATE TABLE VALIDADORES (id INTEGER PRIMARY KEY, qtd_moeda INTEGER, qtd_flags INTEGER, ip VARCHAR(15) UNIQUE)",
+        "CREATE TABLE SELETOR (total_moedas INTEGER)"
+    ]
     
-    # caso a tabela ja exista so continua
-    try:
-        db.execute(query)
-    except sql.OperationalError:
-        pass
+    for q in query:
+        # caso a tabela ja exista so continua
+        try:
+            db.execute(q)
+        except sql.OperationalError:
+            pass
 
 criaTabela()
 
