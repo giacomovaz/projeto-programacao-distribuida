@@ -1,6 +1,7 @@
 from database import Database
 from sqlite3 import IntegrityError
 import json
+from transacao import Transacao
 
 class Validador:
     id: int
@@ -116,3 +117,16 @@ class Seletor:
         self.validadores.append(validador)
         return validador
 
+    def validarTransacao(self, transacao:Transacao):
+        # chamada ao validador
+        resultado = ""
+        try:
+            if resultado == "sucesso":
+                return 1
+            elif resultado == "erro":
+                return 2
+            else:
+                return 0
+        except Exception as e:
+            print(str(e))
+            return 0

@@ -1,17 +1,21 @@
 from database import Database
 from seletor import Seletor
+from transacao import Transacao
 from flask import Flask, render_template, request
+import requests as req
 
 def criaTabela():
     db = Database()
     query = [
-        "CREATE TABLE VALIDADORES (id INTEGER PRIMARY KEY, qtd_moeda INTEGER, qtd_flags INTEGER, ip VARCHAR(15) UNIQUE)",
+        "CREATE TABLE VALIDADORES (id INTEGER PRIMARY KEY, qtd_moeda INTEGER, qtd_flags INTEGER, ip VARCHAR(20) UNIQUE)",
         "CREATE TABLE SELETOR (total_moedas INTEGER)"
     ]
     db.criarTabelas(query=query)
     
 criaTabela()
 seletor = Seletor()
+# definir IP do Gerenciador
+HOST_GERENCIADOR = "http://127.0.0.2:5000"
 
 app = Flask(__name__)
 
@@ -33,8 +37,17 @@ def cadastrarValidador(qtdMoedas, ip):
     else:
         return telaErro("Metodo invalido")
 
+@app.route('/transacao/', methods=["POST"])
+def transacao():
+    transacao = Transacao(id=request.form["id"], rem=request.form["remetente"], reb=request.form["recebedor"],
+                        valor=request.form["valor"], status=request.form["status"], horario=request.form["horario"])
+    transacao.status = seletor.validarTransacao(transacao=transacao)
+    url = HOST_GERENCIADOR + "/transactions" + "/" + str(transacao.id) + "/" + str(transacao.status)
+    req.post(url=url)
+    return ''
+
 @app.errorhandler(404)
 def page_not_found():
     return render_template('page_not_found.html'), 404
 
-app.run(debug=True)
+app.run(host='127.0.0.1', debug=True)
