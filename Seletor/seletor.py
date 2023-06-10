@@ -1,4 +1,6 @@
 from database import Database
+from sqlite3 import IntegrityError
+import json
 
 class Validador:
     id: int
@@ -6,11 +8,15 @@ class Validador:
     qtd_flags: int
     ip: str
 
-    def __init__(self, id=0, qtd_moeda=0, qtd_flags=0, ip="0.0.0.0"):
+    def __init__(self, id:int=0, qtd_moeda:int=0, qtd_flags:int=0, ip:str="0.0.0.0"):
         self.id = id
         self.qtd_moeda = qtd_moeda
         self.qtd_flags = qtd_flags
         self.ip = ip
+
+    def toJson(self):
+        return json.dumps(self, default=lambda o: o.__dict__, 
+            sort_keys=True, indent=4)
 
     def cadastraDb(self):
         db = Database()
@@ -26,7 +32,7 @@ class Validador:
         db.execute(query, param)
         db.save()
 
-    def editarDb(self, campo):
+    def editarDb(self, campo:str):
         db = Database()
         query = "UPDATE VALIDADORES SET "
         param = 0
@@ -44,7 +50,7 @@ class Validador:
         db.save()
         
     @staticmethod
-    def buscarUmDb(id):
+    def buscarUmDb(id:int):
         db = Database()
         query = "SELECT * FROM VALIDADORES WHERE id = ?"
         param = [id]
@@ -56,7 +62,7 @@ class Validador:
 
 class Seletor:
     total_moedas:int
-    validadores:list[Validador]
+    validadores:list[Validador] = []
     
     def __init__(self):
         self.resgatarValidadores()
@@ -67,9 +73,11 @@ class Seletor:
         query = "SELECT id FROM VALIDADORES"
         
         ids = db.execute(query=query).fetchall()
-        for i in ids:
-            validador = Validador.buscarUmDb(i)
-            self.validadores.append(validador)
+        if ids != []:
+            for i in ids:
+                validador = Validador.buscarUmDb(i[0])
+                self.validadores.append(validador)
+        
     
     def resgatarTotalMoedas(self):
         db = Database()
@@ -88,9 +96,23 @@ class Seletor:
         db.save()
         self.total_moedas = 0
     
-    def atualizarTotalMoedas(self, moedas):
+    def atualizarTotalMoedas(self, moedas:int):
         db = Database()
         query = "UPDATE SELETOR SET total_moedas = ?"
         param = [moedas]
         db.execute(query=query, param=param)
         db.save()
+        self.total_moedas = moedas
+        
+    def quantidadeValidadores(self):
+        return len(self.validadores)
+    
+    def novoValidador(self, qtdMoeda:int, ip:str):
+        validador = Validador(id=self.quantidadeValidadores(), qtd_moeda=qtdMoeda, qtd_flags=0,ip=ip)
+        try:
+            validador.cadastraDb()
+        except IntegrityError:
+            raise Exception("IP ja cadastrado")
+        self.validadores.append(validador)
+        return validador
+

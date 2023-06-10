@@ -1,6 +1,6 @@
 from database import Database
 from seletor import Seletor
-from flask import Flask
+from flask import Flask, render_template
 
 def criaTabela():
     db = Database()
@@ -14,6 +14,19 @@ criaTabela()
 seletor = Seletor()
 
 app = Flask(__name__)
-app.run()
 
-    
+@app.route('/validador/<int:qtdMoedas>/<string:ip>', methods=["POST"])
+def cadastrarValidador(qtdMoedas, ip):
+    validador = None
+    try:
+        validador = seletor.novoValidador(qtdMoedas, ip)
+    except Exception as e:
+        return render_template('erro.html', erro=str(e))
+
+    return validador.toJson()
+
+@app.errorhandler(404)
+def page_not_found():
+    return render_template('page_not_found.html'), 404
+
+app.run(debug=True)
