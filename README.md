@@ -1,4 +1,4 @@
-## Dependencias
+## Dependencias SELETOR
 ```
 pip install flask
 ```
