@@ -1,5 +1,4 @@
 import sqlite3 as sql
-import mysql.connector as conn
 
 class Database:
     db: sql.Connection

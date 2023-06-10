@@ -74,8 +74,20 @@ class Seletor:
     def resgatarTotalMoedas(self):
         db = Database()
         query = "SELECT total_moedas FROM SELETOR"
-        self.total_moedas = db.execute(query=query).fetchone()[0]
+        ret = db.execute(query=query).fetchone()
         
+        if ret == None:
+            self.inicializarTotalMoedas()
+        else:
+            self.total_moedas = ret[0]
+            
+    def inicializarTotalMoedas(self):
+        db = Database()
+        query = "INSERT INTO SELETOR VALUES(0)"
+        db.execute(query=query)
+        db.save()
+        self.total_moedas = 0
+    
     def atualizarTotalMoedas(self, moedas):
         db = Database()
         query = "UPDATE SELETOR SET total_moedas = ?"

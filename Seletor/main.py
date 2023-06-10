@@ -1,4 +1,6 @@
 from database import Database
+from seletor import Seletor
+from flask import Flask
 
 def criaTabela():
     db = Database()
@@ -9,9 +11,9 @@ def criaTabela():
     db.criarTabelas(query=query)
     
 criaTabela()
+seletor = Seletor()
 
-
-
-    
+app = Flask(__name__)
+app.run()
 
     

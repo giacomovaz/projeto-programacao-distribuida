@@ -1,0 +1,4 @@
+## Dependencias
+```
+pip install flask
+```
