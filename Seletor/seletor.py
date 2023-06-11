@@ -9,13 +9,16 @@ class Validador:
     qtd_moeda: int
     qtd_flags: int
     ip: str
+    qtd_transacao_correta: int
+    
     chance_escolha: float
 
-    def __init__(self, id:int=0, qtd_moeda:int=0, qtd_flags:int=0, ip:str="0.0.0.0"):
+    def __init__(self, id:int=0, qtd_moeda:int=0, qtd_flags:int=0, ip:str="0.0.0.0", qtd_transacao_correta:int=0):
         self.id = id
         self.qtd_moeda = qtd_moeda
         self.qtd_flags = qtd_flags
         self.ip = ip
+        self.qtd_transacao_correta = qtd_transacao_correta
 
     def toJson(self):
         return json.dumps(self, default=lambda o: o.__dict__, 
@@ -23,7 +26,7 @@ class Validador:
 
     def cadastraDb(self):
         db = Database()
-        query = "INSERT INTO VALIDADORES (id, qtd_moeda, qtd_flags, ip) VALUES (?, ?, ?, ?)"
+        query = "INSERT INTO VALIDADORES (id, qtd_moeda, qtd_flags, ip, qtd_transacao_correta) VALUES (?, ?, ?, ?, ?)"
         param = [self.id, self.qtd_moeda, self.qtd_flags, self.ip]
         db.execute(query, param)
         db.save()
@@ -46,6 +49,9 @@ class Validador:
         elif campo == "qtd_flags":
             query = query + "qtd_flags = ?"
             param = [self.qtd_flags]
+        elif campo == "qtd_transacao_correta":
+            query = query + "qtd_transacao_correta = ?"
+            param = [self.qtd_transacao_correta]
         else:
             raise Exception("Campo nao alteravel")
         
@@ -60,7 +66,7 @@ class Validador:
         # pegar o unico retorno dessa busca
         ret = db.execute(query, param).fetchone()
             
-        return Validador(id=ret[0], qtd_moeda=ret[1], qtd_flags=ret[2], ip=ret[3])
+        return Validador(id=ret[0], qtd_moeda=ret[1], qtd_flags=ret[2], ip=ret[3], qtd_transacao_correta=ret[4])
     
     def isAtivo(self):
         # TODO FAZER LOGICA DE VERIFICAR SE ESTA ATIVO
@@ -74,6 +80,15 @@ class Validador:
     def acrescentarFlag(self):
         self.qtd_flags = self.qtd_flags + 1
         self.editarDb("qtd_flags")
+        
+    def decrescentarFlag(self):
+        if self.qtd_flags > 0:
+            self.qtd_flags = self.qtd_flags - 1
+            self.editarDb("qtd_flags")
+        
+    def acrescentarTransacaoCorreta(self):
+        self.qtd_transacao_correta = self.qtd_transacao_correta + 1
+        self.editarDb("qtd_transacao_correta")
 
 
 class Seletor:
@@ -201,22 +216,16 @@ class Seletor:
         print(transacao.status)
         
         for ip in transacao.ip_incorretos:
-            self.inserirFlagValidador(ip=ip)
-            
-    def inserirFlagValidador(self, validador:Validador=None, id:int=None, ip:str=None):
-        if validador != None:
-            v = validador
-        elif id != None:
-            v = self.buscarValidador(id=id)
-        elif ip != None:
             v = self.buscarValidador(ip=ip)
-        else:
-            raise Exception("Validador nao encontrado")
-        
-        if v != None:
             v.acrescentarFlag()
-        else:
-            raise Exception("Validador nao encontrado")
+        for ip in transacao.ip_corretos:
+            v = self.buscarValidador(ip=ip)
+            v.acrescentarTransacaoCorreta()
+            # se for divisivel por 10000, alcancou a marca de mais 
+            # 10000 transacoes corretas, portanto diminui em 1 as flags
+            if v.qtd_transacao_correta % 10000 == 0:
+                v.decrescentarFlag()
+            
             
 
 

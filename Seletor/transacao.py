@@ -14,6 +14,7 @@ class Transacao:
     ip_validacao: list = []
     lista_validacao: dict = {}
     ip_incorretos:list
+    ip_corretos:list
     
     def __init__(self, id, rem, reb, valor, status, horario):
         self.id = id
@@ -48,9 +49,11 @@ class Transacao:
                 
         if len(validaram) > len(invalidaram):
             self.status = 1
+            self.ip_corretos = list(validaram.keys())
             self.ip_incorretos = list(invalidaram.keys())
         else:
             self.status = 2
+            self.ip_corretos = list(invalidaram.keys())
             self.ip_incorretos = list(validaram.keys())
         
     def isTransacaoProntaValidar(self):

@@ -8,7 +8,7 @@ from datetime import datetime
 def criaTabela():
     db = Database()
     query = [
-        "CREATE TABLE VALIDADORES (id INTEGER PRIMARY KEY, qtd_moeda INTEGER, qtd_flags INTEGER, ip VARCHAR(20) UNIQUE)",
+        "CREATE TABLE VALIDADORES (id INTEGER PRIMARY KEY, qtd_moeda INTEGER, qtd_flags INTEGER, ip VARCHAR(20) UNIQUE, qtd_transacao_correta INTEGER)",
         "CREATE TABLE SELETOR (total_moedas INTEGER)"
     ]
     db.criarTabelas(query=query)
