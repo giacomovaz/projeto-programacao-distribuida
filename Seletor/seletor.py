@@ -63,20 +63,42 @@ class Validador:
         return Validador(id=ret[0], qtd_moeda=ret[1], qtd_flags=ret[2], ip=ret[3])
     
     def isAtivo(self):
+        # TODO FAZER LOGICA DE VERIFICAR SE ESTA ATIVO
         return True
     
-    def enviandoTransacao(self, transacao:Transacao):
+    def enviarTransacao(self, transacao:Transacao):
+        # TODO ENVIAR TRANSACAO PARA OS VALIDADORES
+        transacao.ip_validacao.append(self.ip)
         print(self.toJson())
-        return ""
 
 
 class Seletor:
     total_moedas:int
     validadores:list[Validador] = []
+    transacoes:list[Transacao] = []
     
     def __init__(self):
         self.resgatarValidadores()
         self.resgatarTotalMoedas()
+    
+    def buscarTransacao(self, i:int):
+        for t in self.transacoes:
+            if t.id == i:
+                return t
+        return None
+    
+    def removerTransacao(self, i:int):
+        for t in self.transacoes:
+            if t.id == i:
+                self.transacoes.remove(t)
+                return True
+        return False
+    
+    def isValidadorIpCadastrado(self, ip:str):
+        for v in self.validadores:
+            if v.ip == ip:
+                return True
+        return False
     
     def resgatarValidadores(self):
         db = Database()
@@ -126,7 +148,7 @@ class Seletor:
         self.validadores.append(validador)
         return validador
                 
-    def buscandoValidadoresAtivos(self) -> list[Validador]:
+    def buscarValidadoresAtivos(self) -> list[Validador]:
         if len(self.validadores) == 0:
             return []
         validadores_ativos = []
@@ -135,42 +157,29 @@ class Seletor:
                 validadores_ativos.append(v)
         return validadores_ativos
 
-    def enviandoTransacaoValidadores(self, transacao:Transacao):
-        validadores_ativos = self.buscandoValidadoresAtivos()
+    def enviarTransacaoValidadores(self, transacao:Transacao):
+        validadores_ativos = self.buscarValidadoresAtivos()
         qtd_ativos = len(validadores_ativos)
         if qtd_ativos < 3:
             raise Exception("Quantidade insuficiente de validadores")
         
         definindoChancesValidadores(validadores_ativos)
-        if qtd_ativos == 3 or qtd_ativos == 5:
+        if qtd_ativos in (3, 5):
             for v in self.validadores:
-                v.enviandoTransacao(transacao=transacao)
+                v.enviarTransacao(transacao=transacao)
+            transacao.qtd_validando = qtd_ativos
         elif qtd_ativos < 5:
             for _ in range(3):
                 v = rnd.choices(population=validadores_ativos, weights=listaChances(validadores_ativos))
-                v[0].enviandoTransacao(transacao=transacao)
+                v[0].enviarTransacao(transacao=transacao)
                 validadores_ativos.remove(v[0])
+            transacao.qtd_validando = 3
         else:
             for _ in range(5):
                 v = rnd.choices(population=validadores_ativos, weights=listaChances(validadores_ativos))
-                v[0].enviandoTransacao(transacao=transacao)
+                v[0].enviarTransacao(transacao=transacao)
                 validadores_ativos.remove(v[0])
-        
-
-    def validarTransacao(self, transacao:Transacao):
-        # chamada ao validador
-        resultado = ""
-        try:
-            if resultado == "sucesso":
-                return 1
-            elif resultado == "erro":
-                return 2
-            else:
-                return 0
-        except Exception as e:
-            print(str(e))
-            return 0
-
+            transacao.qtd_validando = 5
 
 
 # chamadas aqui em baixo por estarmos usando lista 
