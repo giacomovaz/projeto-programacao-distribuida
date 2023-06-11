@@ -22,6 +22,9 @@ app = Flask(__name__)
 def telaErro(mensagem:str):
     return render_template('erro.html', erro=mensagem)
 
+def telaSucesso(mensagem:str):
+    return render_template('sucesso.html', sucesso=mensagem)
+
 @app.route('/validador/<int:qtdMoedas>/<string:ip>', methods=["POST"])
 def cadastrarValidador(qtdMoedas, ip):
     if request.method == "POST":
@@ -44,7 +47,12 @@ def transacao():
     transacao.status = seletor.validarTransacao(transacao=transacao)
     url = HOST_GERENCIADOR + "/transactions" + "/" + str(transacao.id) + "/" + str(transacao.status)
     req.post(url=url)
-    return ''
+    if transacao.status == 1:
+        telaSucesso("Transacao valida")
+    elif transacao.status == 2:
+        telaErro("Transacao invalida")
+    else:
+        telaErro("Transacao nao processada")
 
 @app.errorhandler(404)
 def page_not_found():
