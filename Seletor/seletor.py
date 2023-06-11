@@ -70,6 +70,10 @@ class Validador:
         # TODO ENVIAR TRANSACAO PARA OS VALIDADORES
         transacao.ip_validacao.append(self.ip)
         print(self.toJson())
+        
+    def acrescentarFlag(self):
+        self.qtd_flags = self.qtd_flags + 1
+        self.editarDb("qtd_flags")
 
 
 class Seletor:
@@ -78,8 +82,8 @@ class Seletor:
     transacoes:list[Transacao] = []
     
     def __init__(self):
-        self.resgatarValidadores()
-        self.resgatarTotalMoedas()
+        self.buscarValidadores()
+        self.buscarTotalMoedas()
     
     def buscarTransacao(self, i:int):
         for t in self.transacoes:
@@ -94,13 +98,24 @@ class Seletor:
                 return True
         return False
     
-    def isValidadorIpCadastrado(self, ip:str):
-        for v in self.validadores:
-            if v.ip == ip:
-                return True
-        return False
+    def buscarValidador(self, id:int=None, ip:str=None):
+        if id != None:
+            for v in self.validadores:
+                if v.id == id:
+                    return v
+            return None
+        if ip != None:
+            for v in self.validadores:
+                if v.ip == ip:
+                    return v
+            return None
+            
     
-    def resgatarValidadores(self):
+    def isValidadorIpCadastrado(self, ip:str):
+        v = self.buscarValidador(ip=ip)
+        return v != None
+    
+    def buscarValidadores(self):
         db = Database()
         query = "SELECT id FROM VALIDADORES"
         
@@ -111,7 +126,7 @@ class Seletor:
                 self.validadores.append(validador)
         
     
-    def resgatarTotalMoedas(self):
+    def buscarTotalMoedas(self):
         db = Database()
         query = "SELECT total_moedas FROM SELETOR"
         ret = db.execute(query=query).fetchone()
@@ -180,6 +195,29 @@ class Seletor:
                 v[0].enviarTransacao(transacao=transacao)
                 validadores_ativos.remove(v[0])
             transacao.qtd_validando = 5
+        
+    def validarTransacao(self, transacao:Transacao):
+        transacao.validarTransacao()
+        print(transacao.status)
+        
+        for ip in transacao.ip_incorretos:
+            self.inserirFlagValidador(ip=ip)
+            
+    def inserirFlagValidador(self, validador:Validador=None, id:int=None, ip:str=None):
+        if validador != None:
+            v = validador
+        elif id != None:
+            v = self.buscarValidador(id=id)
+        elif ip != None:
+            v = self.buscarValidador(ip=ip)
+        else:
+            raise Exception("Validador nao encontrado")
+        
+        if v != None:
+            v.acrescentarFlag()
+        else:
+            raise Exception("Validador nao encontrado")
+            
 
 
 # chamadas aqui em baixo por estarmos usando lista 
@@ -194,8 +232,8 @@ def definindoChancesValidadores(validadores:list[Validador]):
     total_moeda = totalMoedaEntreValidadores(validadores)
     for v in validadores:
         chance = v.qtd_moeda/total_moeda
-        if chance > 0.45:
-            v.chance_escolha = 0.45
+        if chance > 0.40:
+            v.chance_escolha = 0.40
         elif chance < 0.05:
             v.chance_escolha = 0.05
         else:

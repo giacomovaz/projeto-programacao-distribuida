@@ -13,6 +13,7 @@ class Transacao:
     qtd_validado: int = 0
     ip_validacao: list = []
     lista_validacao: dict = {}
+    ip_incorretos:list
     
     def __init__(self, id, rem, reb, valor, status, horario):
         self.id = id
@@ -47,15 +48,14 @@ class Transacao:
                 
         if len(validaram) > len(invalidaram):
             self.status = 1
-            # TODO ADICIONAR FLAG NOS QUE INVALIDARAM
+            self.ip_incorretos = list(invalidaram.keys())
         else:
             self.status = 2
-            # TODO ADICIONAR FLAG NOS QUE VALIDARAM
+            self.ip_incorretos = list(validaram.keys())
         
-    def isTransacaoVerificada(self):
+    def isTransacaoProntaValidar(self):
         # se todos os validadores ja tiverem enviado suas respostas
         if self.qtd_validado == self.qtd_validando:
-            self.validarTransacao()
             return True
         else:
             return False

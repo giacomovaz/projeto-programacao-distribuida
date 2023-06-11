@@ -69,18 +69,17 @@ def validarTransacao(ip, id, status):
         try:
             transacao = seletor.buscarTransacao(i=id)
             if transacao == None:
-                # TODO ADICIONAR ADICAO DE FLAG
                 return mensagemErro("Transacao invalida")
             elif status not in (0, 1, 2):
-                # TODO ADICIONAR ADICAO DE FLAG
                 return mensagemErro("Status invalida")
             elif not seletor.isValidadorIpCadastrado(ip):
                 return mensagemErro("IP nao cadastrado")
             
             transacao.adicionarValidacao(ip=ip, status=status)
             
-            if transacao.isTransacaoVerificada():
-                print(transacao.status)
+            if transacao.isTransacaoProntaValidar():
+                seletor.validarTransacao(transacao=transacao)
+                
                 url = HOST_GERENCIADOR + "/transactions" + "/" + str(transacao.id) + "/" + str(transacao.status)
                 req.post(url=url)
                 
