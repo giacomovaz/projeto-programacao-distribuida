@@ -92,7 +92,7 @@ def validarTransacao(ip, id, status):
     return mensagemSucesso("Validacao executada")
 
 @app.errorhandler(404)
-def page_not_found():
+def page_not_found(erro):
     return render_template('page_not_found.html'), 404
 
 app.run(host='127.0.0.1', debug=True)
