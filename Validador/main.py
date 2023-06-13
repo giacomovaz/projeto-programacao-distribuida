@@ -3,8 +3,7 @@ from sqlite3 import IntegrityError
 import json
 from Seletor.seletor import Validador
 from Seletor.transacao import Transacao
-from datetime import datetime
-
+from datetime import datetime, time
 
 class Validador:
     id: int
@@ -26,6 +25,7 @@ class Validador:
         return json.dumps(self, default=lambda o: o.__dict__,
                           sort_keys=True, indent=4)
 
+
     def valida_transacao(self, transacao: Transacao):
 
         # Validar saldo do remetente
@@ -34,18 +34,29 @@ class Validador:
             horario_atual = datetime.now()
             if self.horario_ultima_trans < transacao.horario <= horario_atual:
                 # Verificar limite de transações por segundo
+                self.qtde_trans = self.qtde_trans_rem(transacao.remetente)
                 if self.qtde_trans < 1000:
                     # Verificar chave única
                     if transacao.id == self.id:
-                        # ajustar a verificação do id 
                         return 1  # transacao concluida
                     else:
                         return 2  # id não corresponde
                 else:
-                    # adicionar o bloqueio de 1 min
-                    return 0  # Mais de 1000 transacoes por segundo
+                    proximo_minuto = time.time() + 60
+                    if proximo_minuto > time.time(): #blolqueio de 1 min
+                        return 0  # Mais de 1000 transacoes por segundo
             else:
                 return 2  # Horario menor que da ultima transacao e maior que hora atual
         else:
             return 2  # saldo insuficiente
+
+    def qtde_trans_rem(self, id_rem):
+        id = id_rem
+        db = Database() # banco do gerenciador
+        # pegar a quantidade de transacoes do rementente no ultimo 1seg
+        query = "SELECT COUNT(*) FROM transacao WHERE remetente = {0} AND horario > datetime('now', '-1 seconds')".format(id)
+        ret = db.execute(query).fetchone()
+        return ret[0]
+
+
 
