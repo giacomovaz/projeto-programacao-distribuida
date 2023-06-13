@@ -37,6 +37,7 @@ class Validador:
                 if self.qtde_trans < 1000:
                     # Verificar chave única
                     if transacao.id == self.id:
+                        # ajustar a verificação do id 
                         return 1  # transacao concluida
                     else:
                         return 2  # id não corresponde
