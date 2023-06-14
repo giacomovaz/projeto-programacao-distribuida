@@ -1,4 +1,5 @@
 from datetime import datetime
+from transacao import Transacao
 import time
 
 
@@ -21,7 +22,7 @@ class Validador:
         self.limite_transacoes = False
 
     # Método para validar a transação
-    def valida_transacao(self, transacao):
+    def valida_transacao(self, transacao: Transacao):
         # Obter o horário atual
         horario_atual = datetime.now()
 
