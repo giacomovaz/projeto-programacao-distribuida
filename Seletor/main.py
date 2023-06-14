@@ -2,21 +2,20 @@ from database import Database
 from seletor import Seletor
 from transacao import Transacao
 from flask import Flask, render_template, request
-import requests as req
-from datetime import datetime
+from datetime import datetime, timedelta
+from time import sleep
 
 def criaTabela():
     db = Database()
     query = [
         "CREATE TABLE VALIDADORES (id INTEGER PRIMARY KEY, qtd_moeda INTEGER, qtd_flags INTEGER, ip VARCHAR(20) UNIQUE, qtd_transacao_correta INTEGER)",
-        "CREATE TABLE SELETOR (total_moedas INTEGER)"
+        "CREATE TABLE SELETOR (total_moedas INTEGER)",
+        "CREATE TABLE TRANSACOES (id INTEGER PRIMARY KEY, id_rem INTEGER, id_reb INTEGER, horario DATETIME)"
     ]
     db.criarTabelas(query=query)
     
 criaTabela()
 seletor = Seletor()
-# definir IP do Gerenciador
-HOST_GERENCIADOR = "http://127.0.0.2:5000"
 
 app = Flask(__name__)
 
@@ -27,9 +26,11 @@ def telaSucesso(mensagem:str):
     return render_template('sucesso.html', sucesso=mensagem)
 
 def mensagemErro(mensagem:str):
+    print(f'erro: {mensagem}')
     return '{ erro:%s }' % mensagem
 
 def mensagemSucesso(mensagem:str):
+    print(f'sucesso: {mensagem}')
     return '{ sucesso:%s }' % mensagem
 
 @app.route('/validador/<int:qtdMoedas>/<string:ip>', methods=["POST"])
@@ -55,7 +56,6 @@ def enviaTransacao():
         try:
             seletor.enviarTransacaoValidadores(transacao=transacao)
             seletor.transacoes.append(transacao) 
-            print(len(seletor.transacoes))
             return mensagemSucesso("Inicio Validacao")
         except Exception as e:
             return mensagemErro(str(e))
@@ -80,8 +80,7 @@ def validarTransacao(ip, id, status):
             if transacao.isTransacaoProntaValidar():
                 seletor.validarTransacao(transacao=transacao)
                 
-                url = HOST_GERENCIADOR + "/transactions" + "/" + str(transacao.id) + "/" + str(transacao.status)
-                req.post(url=url)
+                seletor.alterarTransacao(transacao=transacao)
                 
                 seletor.removerTransacao(id)
         except Exception as e:

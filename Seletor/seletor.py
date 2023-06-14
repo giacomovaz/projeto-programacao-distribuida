@@ -1,8 +1,15 @@
 from database import Database
 from sqlite3 import IntegrityError
 import json
-from transacao import Transacao
+from transacao import Transacao, Cliente
 import random as rnd
+import requests as req
+
+# definir IP do Gerenciador
+HOST_GERENCIADOR = "http://127.0.0.2:5000"
+
+SERVICE_TRANSACAO = "/transactions"
+SERVICE_CLIENTE = "/cliente"
 
 class Validador:
     id: int
@@ -27,7 +34,7 @@ class Validador:
     def cadastraDb(self):
         db = Database()
         query = "INSERT INTO VALIDADORES (id, qtd_moeda, qtd_flags, ip, qtd_transacao_correta) VALUES (?, ?, ?, ?, ?)"
-        param = [self.id, self.qtd_moeda, self.qtd_flags, self.ip]
+        param = [self.id, self.qtd_moeda, self.qtd_flags, self.ip, self.qtd_transacao_correta]
         db.execute(query, param)
         db.save()
 
@@ -75,7 +82,8 @@ class Validador:
     def enviarTransacao(self, transacao:Transacao):
         # TODO ENVIAR TRANSACAO PARA OS VALIDADORES
         transacao.ip_validacao.append(self.ip)
-        print(self.toJson())
+        print(f'qtd_transacao remetente: {transacao.remetente.qtdTransacoesUltimoSegudo()}')
+        # print(self.toJson())
         
     def acrescentarFlag(self):
         self.qtd_flags = self.qtd_flags + 1
@@ -188,6 +196,7 @@ class Seletor:
         return validadores_ativos
 
     def enviarTransacaoValidadores(self, transacao:Transacao):
+        transacao.cadastraDb()
         validadores_ativos = self.buscarValidadoresAtivos()
         qtd_ativos = len(validadores_ativos)
         if qtd_ativos < 3:
@@ -226,7 +235,19 @@ class Seletor:
             if v.qtd_transacao_correta % 10000 == 0:
                 v.decrescentarFlag()
             
+    def alterarTransacao(self, transacao:Transacao):
+        url = HOST_GERENCIADOR + SERVICE_TRANSACAO + "/" + str(transacao.id) + "/" + str(transacao.status)
+        req.post(url=url)
             
+    def buscarCliente(self, id:int):
+        
+        url = HOST_GERENCIADOR + SERVICE_CLIENTE + "/" + str(id)
+        ret = req.get(url=url).json()
+        
+        cliente = Cliente()
+        cliente.preencherCliente(ret)
+        print(cliente.toJson())
+        return cliente
 
 
 # chamadas aqui em baixo por estarmos usando lista 
