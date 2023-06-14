@@ -1,8 +1,6 @@
 from database import Database
-from sqlite3 import IntegrityError
 import json
-from Seletor.seletor import Validador
-from Seletor.transacao import Transacao
+from transacao import Transacao
 from datetime import datetime, time
 
 class Validador:
@@ -26,6 +24,9 @@ class Validador:
                           sort_keys=True, indent=4)
 
 
+    # TODO
+    #  - Seletor irá enviar o qtd Moedas que o cliente remetente
+    #    possui em sua conta
     def valida_transacao(self, transacao: Transacao):
 
         # Validar saldo do remetente
@@ -50,6 +51,10 @@ class Validador:
         else:
             return 2  # saldo insuficiente
 
+
+    # TODO
+    #  - Seletor vai enviar a quantidade de transacoes, validador
+    #    não precisará ter acesso ao banco de dados para isso
     def qtde_trans_rem(self, id_rem):
         id = id_rem
         db = Database() # banco do gerenciador
