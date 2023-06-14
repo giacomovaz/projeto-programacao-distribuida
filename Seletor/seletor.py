@@ -114,12 +114,14 @@ class Seletor:
                 return t
         return None
     
-    def removerTransacao(self, i:int):
-        for t in self.transacoes:
-            if t.id == i:
-                self.transacoes.remove(t)
-                return True
-        return False
+    def removerTransacao(self, i:int, transacao:Transacao=None):
+        if transacao == None:
+            for t in self.transacoes:
+                if t.id == i:
+                    self.transacoes.remove(t)
+                    return True
+            return False
+        self.transacoes.remove(transacao)
     
     def buscarValidador(self, id:int=None, ip:str=None):
         if id != None:
