@@ -67,7 +67,8 @@ class Transacao:
     def toJson(self):
         return json.dumps(self, default=lambda o: o.__dict__, 
             sort_keys=True, indent=4)
-        
+    
+    # ip valido para realizar a validacao da transacao
     def isIpValido(self, ip):
         return ip in self.ip_validacao
     
@@ -105,7 +106,4 @@ class Transacao:
         
     def isTransacaoProntaValidar(self):
         # se todos os validadores ja tiverem enviado suas respostas
-        if self.qtd_validado == self.qtd_validando:
-            return True
-        else:
-            return False
+        return self.qtd_validado == self.qtd_validando

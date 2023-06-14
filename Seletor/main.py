@@ -8,7 +8,7 @@ from time import sleep
 def criaTabela():
     db = Database()
     query = [
-        "CREATE TABLE VALIDADORES (id INTEGER PRIMARY KEY, qtd_moeda INTEGER, qtd_flags INTEGER, ip VARCHAR(20) UNIQUE, qtd_transacao_correta INTEGER)",
+        "CREATE TABLE VALIDADORES (id INTEGER PRIMARY KEY, qtd_moeda INTEGER, qtd_flags INTEGER, ip VARCHAR(20) UNIQUE, qtd_transacao_correta INTEGER, chave VARCHAR(100))",
         "CREATE TABLE SELETOR (total_moedas INTEGER)",
         "CREATE TABLE TRANSACOES (id INTEGER PRIMARY KEY, id_rem INTEGER, id_reb INTEGER, horario DATETIME)"
     ]
@@ -33,6 +33,7 @@ def mensagemSucesso(mensagem:str):
     print(f'sucesso: {mensagem}')
     return '{ sucesso:%s }' % mensagem
 
+
 @app.route('/validador/<int:qtdMoedas>/<string:ip>', methods=["POST"])
 def cadastrarValidador(qtdMoedas, ip):
     if request.method == "POST":
@@ -47,7 +48,11 @@ def cadastrarValidador(qtdMoedas, ip):
             return telaErro("Quantidade de FCoins insuficiente")
     else:
         return telaErro("Metodo invalido")
+    
+def removerValidador():
+    pass
 
+# chamada feita pelo Gerenciador
 @app.route('/transacao/', methods=["POST"])
 def enviaTransacao():
     if request.method == "POST":
@@ -63,10 +68,12 @@ def enviaTransacao():
     else:
         return mensagemErro("Metodo invalido")
 
-@app.route('/transacao/<string:ip>/<int:id>/<int:status>', methods=["POST"])
-def validarTransacao(ip, id, status):
+# chamada feita pelo validador
+@app.route('/transacao/<string:ip>/<int:id>/<int:status>/<string:chave>', methods=["POST"])
+def validarTransacao(ip, id, status, chave):
     if request.method == "POST":
         try:
+            seletor.validarChave(ip=ip, chave=chave)
             transacao = seletor.buscarTransacao(i=id)
             if transacao == None:
                 return mensagemErro("Transacao invalida")

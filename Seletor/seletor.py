@@ -17,15 +17,17 @@ class Validador:
     qtd_flags: int
     ip: str
     qtd_transacao_correta: int
+    chave: str
     
     chance_escolha: float
 
-    def __init__(self, id:int=0, qtd_moeda:int=0, qtd_flags:int=0, ip:str="0.0.0.0", qtd_transacao_correta:int=0):
+    def __init__(self, id:int=0, qtd_moeda:int=0, qtd_flags:int=0, ip:str="0.0.0.0", qtd_transacao_correta:int=0, chave=""):
         self.id = id
         self.qtd_moeda = qtd_moeda
         self.qtd_flags = qtd_flags
         self.ip = ip
         self.qtd_transacao_correta = qtd_transacao_correta
+        self.chave = chave
 
     def toJson(self):
         return json.dumps(self, default=lambda o: o.__dict__, 
@@ -33,8 +35,8 @@ class Validador:
 
     def cadastraDb(self):
         db = Database()
-        query = "INSERT INTO VALIDADORES (id, qtd_moeda, qtd_flags, ip, qtd_transacao_correta) VALUES (?, ?, ?, ?, ?)"
-        param = [self.id, self.qtd_moeda, self.qtd_flags, self.ip, self.qtd_transacao_correta]
+        query = "INSERT INTO VALIDADORES (id, qtd_moeda, qtd_flags, ip, qtd_transacao_correta, chave) VALUES (?, ?, ?, ?, ?, ?)"
+        param = [self.id, self.qtd_moeda, self.qtd_flags, self.ip, self.qtd_transacao_correta, self.chave]
         db.execute(query, param)
         db.save()
 
@@ -73,7 +75,7 @@ class Validador:
         # pegar o unico retorno dessa busca
         ret = db.execute(query, param).fetchone()
             
-        return Validador(id=ret[0], qtd_moeda=ret[1], qtd_flags=ret[2], ip=ret[3], qtd_transacao_correta=ret[4])
+        return Validador(id=ret[0], qtd_moeda=ret[1], qtd_flags=ret[2], ip=ret[3], qtd_transacao_correta=ret[4], chave=ret[5])
     
     def isAtivo(self):
         # TODO FAZER LOGICA DE VERIFICAR SE ESTA ATIVO
@@ -180,7 +182,9 @@ class Seletor:
         return len(self.validadores)
     
     def novoValidador(self, qtdMoeda:int, ip:str):
-        validador = Validador(id=self.quantidadeValidadores(), qtd_moeda=qtdMoeda, qtd_flags=0,ip=ip)
+        qtd_validadores = self.quantidadeValidadores()
+        chave_segura = f'chave_segura{qtd_validadores}'
+        validador = Validador(id=qtd_validadores, qtd_moeda=qtdMoeda, qtd_flags=0,ip=ip, chave=chave_segura)
         try:
             validador.cadastraDb()
         except IntegrityError:
@@ -188,6 +192,10 @@ class Seletor:
         self.validadores.append(validador)
         return validador
                 
+    def validarChave(self, ip, chave):
+        if self.buscarValidador(ip=ip).chave != chave:
+            raise Exception("Chave incorreta")            
+    
     def buscarValidadoresAtivos(self) -> list[Validador]:
         if len(self.validadores) == 0:
             return []
