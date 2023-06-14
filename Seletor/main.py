@@ -27,16 +27,16 @@ def telaSucesso(mensagem:str):
 
 def mensagemErro(mensagem:str):
     print(f'erro: {mensagem}')
-    return '{ erro:%s }' % mensagem
+    return '{ erro: %s }' % mensagem
 
 def mensagemSucesso(mensagem:str):
     print(f'sucesso: {mensagem}')
-    return '{ sucesso:%s }' % mensagem
+    return '{ sucesso: %s }' % mensagem
 
 
-@app.route('/validador/<int:qtdMoedas>/<string:ip>', methods=["POST"])
+@app.route('/validador/<int:qtdMoedas>/<string:ip>', methods=["GET", "POST"])
 def cadastrarValidador(qtdMoedas, ip):
-    if request.method == "POST":
+    if request.method == "POST" or request.method == "GET":
         if qtdMoedas >= 100:
             try:
                 validador = seletor.novoValidador(qtdMoedas, ip)
@@ -48,9 +48,24 @@ def cadastrarValidador(qtdMoedas, ip):
             return telaErro("Quantidade de FCoins insuficiente")
     else:
         return telaErro("Metodo invalido")
-    
-def removerValidador():
-    pass
+
+
+@app.route('/validador/remover/<string:ip>/<string:chave>', methods=["DELETE"])
+def removerValidador(ip, chave):
+    if request.method == "DELETE":
+        try:
+            v = seletor.buscarValidador(ip=ip)
+            if v == None:
+                return mensagemErro("IP nao encontrado")
+            
+            seletor.validarChave(ip=ip, chave=chave)
+            seletor.removerValidador(validador=v)
+        except Exception as e:
+            return mensagemErro(str(e))
+    else:
+        return mensagemErro("Metodo invalido")
+    return mensagemSucesso("Validador removido")
+
 
 # chamada feita pelo Gerenciador
 @app.route('/transacao/', methods=["POST"])
@@ -68,12 +83,12 @@ def enviaTransacao():
     else:
         return mensagemErro("Metodo invalido")
 
-# chamada feita pelo validador
+
+# chamada feita pelos Validadores
 @app.route('/transacao/<string:ip>/<int:id>/<int:status>/<string:chave>', methods=["POST"])
 def validarTransacao(ip, id, status, chave):
     if request.method == "POST":
         try:
-            seletor.validarChave(ip=ip, chave=chave)
             transacao = seletor.buscarTransacao(i=id)
             if transacao == None:
                 return mensagemErro("Transacao invalida")
@@ -81,6 +96,7 @@ def validarTransacao(ip, id, status, chave):
                 return mensagemErro("Status invalida")
             elif not seletor.isValidadorIpCadastrado(ip):
                 return mensagemErro("IP nao cadastrado")
+            seletor.validarChave(ip=ip, chave=chave)
             
             transacao.adicionarValidacao(ip=ip, status=status)
             
@@ -96,6 +112,7 @@ def validarTransacao(ip, id, status, chave):
         return mensagemErro("Metodo invalido")
 
     return mensagemSucesso("Validacao executada")
+
 
 @app.errorhandler(404)
 def page_not_found(erro):

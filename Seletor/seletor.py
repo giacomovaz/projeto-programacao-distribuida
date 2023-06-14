@@ -237,6 +237,8 @@ class Seletor:
         for ip in transacao.ip_incorretos:
             v = self.buscarValidador(ip=ip)
             v.acrescentarFlag()
+            if v.qtd_flags >= 3:
+                self.removerValidador(validador=v, is_excluido_por_flags=True)
         for ip in transacao.ip_corretos:
             v = self.buscarValidador(ip=ip)
             v.acrescentarTransacaoCorreta()
@@ -258,7 +260,12 @@ class Seletor:
         cliente.preencherCliente(ret)
         print(cliente.toJson())
         return cliente
-
+    
+    def removerValidador(self, validador:Validador, is_excluido_por_flags:bool=False):
+        if is_excluido_por_flags:
+            self.total_moedas = self.total_moedas + validador.qtd_moeda
+        self.validadores.remove(validador)
+        validador.excluirDb()
 
 # chamadas aqui em baixo por estarmos usando lista 
 # que nao vem do self do Seletor
