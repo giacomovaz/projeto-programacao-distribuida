@@ -4,12 +4,16 @@ import json
 from transacao import Transacao, Cliente
 import random as rnd
 import requests as req
+from datetime import datetime
+from time import strptime, mktime
+import win32.win32api as win
 
 # definir IP do Gerenciador
 HOST_GERENCIADOR = "http://127.0.0.2:5000"
 
 SERVICE_TRANSACAO = "/transactions"
 SERVICE_CLIENTE = "/cliente"
+SERVICE_HORA = "/hora"
 
 class Validador:
     id: int
@@ -283,6 +287,18 @@ class Seletor:
             self.total_moedas = self.total_moedas + validador.qtd_moeda
         self.validadores.remove(validador)
         validador.excluirDb()
+        
+    def atualizarHorario(self):
+        url = HOST_GERENCIADOR + SERVICE_HORA
+
+        formato = "%a, %d %b %Y %H:%M:%S %Z"
+        ret = req.get(url=url).json()
+        a = strptime(ret, formato)
+        dt = datetime.fromtimestamp(mktime(a))
+        print(dt)
+        print(dt.year, dt.month, dt.isoweekday(), dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
+        # def SetSystemTime(year, month, dayOfWeek, day, hour, minute, second, millseconds): ...
+        win.SetSystemTime(dt.year, dt.month, dt.weekday(), dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
 
 # chamadas aqui em baixo por estarmos usando lista 
 # que nao vem do self do Seletor

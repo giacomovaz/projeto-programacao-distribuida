@@ -2,6 +2,7 @@ from database import Database
 from seletor import Seletor
 from transacao import Transacao
 from flask import Flask, render_template, request
+import sys, pyuac
 
 def criaTabela():
     db = Database()
@@ -116,4 +117,13 @@ def validarTransacao(ip, id, status, chave):
 def page_not_found(erro):
     return render_template('page_not_found.html'), 404
 
-app.run(host='127.0.0.1', debug=True)
+if sys.platform.startswith('linux'):
+    app.run(host='127.0.0.1', debug=True)
+
+elif  sys.platform=='win32':
+    # if not pyuac.isUserAdmin():
+    #     pyuac.runAsAdmin()
+    # else:
+    #     seletor.atualizarHorario()
+        app.run(host='127.0.0.1', debug=True)
+        
