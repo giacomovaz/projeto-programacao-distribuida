@@ -82,11 +82,11 @@ def validarTransacao(ip, id, status):
                 
                 seletor.alterarTransacao(transacao=transacao)
                 
-                seletor.removerTransacao(id)
+                seletor.removerTransacao(transacao=transacao)
         except Exception as e:
             return mensagemErro(str(e))
     else:
-        return telaErro("Metodo invalido")
+        return mensagemErro("Metodo invalido")
 
     return mensagemSucesso("Validacao executada")
 
