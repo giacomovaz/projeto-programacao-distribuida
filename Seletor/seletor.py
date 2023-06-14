@@ -99,6 +99,10 @@ class Validador:
     def acrescentarTransacaoCorreta(self):
         self.qtd_transacao_correta = self.qtd_transacao_correta + 1
         self.editarDb("qtd_transacao_correta")
+        
+    def acrescentarMoeda(self, qtd_moeda):
+        self.qtd_moeda = self.qtd_moeda + qtd_moeda
+        self.editarDb("qtd_moedas")
 
 
 class Seletor:
@@ -230,6 +234,17 @@ class Seletor:
                 validadores_ativos.remove(v[0])
             transacao.qtd_validando = 5
         
+    def distribuirGanhos(self, qtd_moeda, transacao:Transacao):
+        porcentagem_seletor = 0.5
+        porcentagem_validadores = 0.5
+        
+        self.total_moedas = self.total_moedas + int(qtd_moeda*porcentagem_seletor)
+        
+        moedas_distribuidas = int(qtd_moeda*porcentagem_validadores)
+        for ip in transacao.ip_corretos:
+            v = self.buscarValidador(ip=ip)
+            v.acrescentarMoeda(int(moedas_distribuidas/transacao.qtd_validando))
+        
     def validarTransacao(self, transacao:Transacao):
         transacao.validarTransacao()
         print(transacao.status)
@@ -246,6 +261,8 @@ class Seletor:
             # 10000 transacoes corretas, portanto diminui em 1 as flags
             if v.qtd_transacao_correta % 10000 == 0:
                 v.decrescentarFlag()
+                
+        self.distribuirGanhos(qtd_moeda=60, transacao=transacao)
             
     def alterarTransacao(self, transacao:Transacao):
         url = HOST_GERENCIADOR + SERVICE_TRANSACAO + "/" + str(transacao.id) + "/" + str(transacao.status)

@@ -2,8 +2,6 @@ from database import Database
 from seletor import Seletor
 from transacao import Transacao
 from flask import Flask, render_template, request
-from datetime import datetime, timedelta
-from time import sleep
 
 def criaTabela():
     db = Database()
