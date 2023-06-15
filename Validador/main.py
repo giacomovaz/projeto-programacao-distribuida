@@ -26,9 +26,7 @@ def incializarValidador(ip, chave):
 
 @app.route('/transacao/validar', methods=['POST'])
 def validarTransacao():
-    global validador
     
-    print(request.form)
     ret = request.form
     transacao = Transacao(id=int(ret['id']), valor=int(ret['valor']), rem=int(ret['id_rem']),
                           horario=datetime.strptime(ret['horario_trans'], FORMAT_DATA))

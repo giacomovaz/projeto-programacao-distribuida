@@ -78,7 +78,7 @@ def enviaTransacao():
         try:
             seletor.transacoes.append(transacao) 
             seletor.enviarTransacaoValidadores(transacao=transacao)
-            return mensagemSucesso("Transacao enviada")
+            return mensagemSucesso("Transacao enviada\n\n\n\n")
         except Exception as e:
             # se deu exception em algum ponto, nao inicializara a validacao
             seletor.removerTransacao(transacao=transacao) 
@@ -103,7 +103,6 @@ def validarTransacao(ip, id, status, chave):
             seletor.validarChave(ip=ip, chave=chave)
             
             transacao.adicionarValidacao(ip=ip, status=status)
-            print(f'lista ips validando {transacao.lista_validacao}')
             
             if transacao.isTransacaoProntaValidar():
                 seletor.validarTransacao(transacao=transacao)

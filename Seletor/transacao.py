@@ -54,8 +54,8 @@ class Transacao:
     qtd_validado: int = 0
     ip_validacao: list = []
     lista_validacao: dict = {}
-    ip_incorretos:list
-    ip_corretos:list
+    ip_incorretos:list = []
+    ip_corretos:list = []
     
     def __init__(self, id=0, rem=0, reb=0, valor=0, status=0, horario=None):
         self.id = id

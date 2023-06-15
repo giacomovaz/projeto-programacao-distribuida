@@ -57,7 +57,7 @@ class Validador:
     def editarDb(self, campo:str):
         db = Database()
         query = "UPDATE VALIDADORES SET "
-        param = 0
+        param = []
 
         if campo == "qtd_moeda":
             query = query + "qtd_moeda = ?"
@@ -70,6 +70,9 @@ class Validador:
             param = [self.qtd_transacao_correta]
         else:
             raise Exception("Campo nao alteravel")
+        
+        query = query + "WHERE id = ?"
+        param.append(self.id)
         
         db.execute(query, param)
         db.save()
@@ -200,13 +203,12 @@ class Seletor:
         db.save()
         self.total_moedas = 0
     
-    def atualizarTotalMoedas(self, moedas:int):
+    def atualizarTotalMoedasDb(self):
         db = Database()
         query = "UPDATE SELETOR SET total_moedas = ?"
-        param = [moedas]
+        param = [self.total_moedas]
         db.execute(query=query, param=param)
         db.save()
-        self.total_moedas = moedas
         
     def ultimoIdCadastrado(self):
         db = Database()
@@ -263,7 +265,8 @@ class Seletor:
         remetente.tipo = "rem"
         transacao.remetente = remetente
         horario_atual = self.horarioAtualGerenciador()
-        print(f'HORARIOS: {ult_trans.horario}, {transacao.horario}, {horario_atual}')
+        # garantindo que essa lista estara vazia
+        transacao.lista_validacao = {}
         if qtd_ativos in (3, 5):
             # definindo quanto validadores irao validar
             transacao.qtd_validando = qtd_ativos
@@ -288,17 +291,16 @@ class Seletor:
         porcentagem_seletor = 0.5
         porcentagem_validadores = 0.5
         
-        self.total_moedas = self.total_moedas + int(qtd_moeda*porcentagem_seletor)
+        self.total_moedas = self.total_moedas + round(qtd_moeda*porcentagem_seletor)
+        self.atualizarTotalMoedasDb()
         
-        moedas_distribuidas = int(qtd_moeda*porcentagem_validadores)
+        moedas_distribuidas = round(qtd_moeda*porcentagem_validadores)
         for ip in transacao.ip_corretos:
             v = self.buscarValidador(ip=ip)
-            v.acrescentarMoeda(int(moedas_distribuidas/transacao.qtd_validando))
+            v.acrescentarMoeda(round(moedas_distribuidas/transacao.qtd_validando))
         
     def validarTransacao(self, transacao:Transacao):
         transacao.validarTransacao()
-        print(transacao.status)
-        print(transacao.ip_corretos)
         for ip in transacao.ip_incorretos:
             v = self.buscarValidador(ip=ip)
             v.acrescentarFlag()
@@ -330,6 +332,7 @@ class Seletor:
     def removerValidador(self, validador:Validador, is_excluido_por_flags:bool=False):
         if is_excluido_por_flags:
             self.total_moedas = self.total_moedas + validador.qtd_moeda
+            self.atualizarTotalMoedasDb()
         self.validadores.remove(validador)
         validador.excluirDb()
         
