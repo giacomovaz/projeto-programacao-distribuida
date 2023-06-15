@@ -1,7 +1,8 @@
 from datetime import datetime
+import requests
+import json
 from transacao import Transacao
 import time
-
 
 # Definição da classe Validador
 class Validador:
@@ -49,18 +50,32 @@ class Validador:
                             # Zerar a quantidade de transações
                             self.qtde_trans = 0
                         # Transação concluída
+                        self.enviar_validacao(transacao.ip, transacao.id, 1, transacao.chave)
                         return 1
                     else:
                         # ID da transação não corresponde à ID do validador
+                        self.enviar_validacao(transacao.ip, transacao.id, 2, transacao.chave)
                         return 2
                 else:
                     # Mais de 1000 transações por segundo ou dentro do minuto
+                    self.enviar_validacao(transacao.ip, transacao.id, 2, transacao.chave)
                     return 2
             else:
                 # Horário da transação é menor que o da última transação ou maior que o horário atual
+                self.enviar_validacao(transacao.ip, transacao.id, 2, transacao.chave)
                 return 2
         else:
             # Saldo insuficiente na conta do remetente
+            self.enviar_validacao(transacao.ip, transacao.id, 2, transacao.chave)
             return 2
 
-
+    # Método para enviar a validação da transação ao seletor
+    def enviar_validacao(self, ip: str, id: int, status: int, chave: str):
+        url = f"http://localhost:5000/transacao/{ip}/{id}/{status}/{chave}"
+        payload = {}
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        if response.status_code == 200:
+            print("Validação enviada com sucesso.")
+        else:
+            print("Erro ao enviar a validação.")
