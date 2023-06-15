@@ -181,7 +181,8 @@ def ApagarSeletor(id):
 def horario():
     if(request.method == 'GET'):
         objeto = datetime.now()
-        return jsonify(objeto)
+        # colocado str pra enviar o horario com os milisegundos
+        return jsonify(str(objeto))
 		
 @app.route('/transacoes', methods = ['GET'])
 def ListarTransacoes():
@@ -199,6 +200,7 @@ def CriaTransacao(rem, reb, valor):
 		
         seletores = Seletor.query.all()
         for i in seletores:
+            # post anterior n estava funcionando
             url = 'http://' + i.ip + '/transacao/'
             req.post(url, data={
                 "id":objeto.id,

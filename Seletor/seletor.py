@@ -316,6 +316,8 @@ class Seletor:
                 
         self.distribuirGanhos(qtd_moeda=60, transacao=transacao)
             
+    # alterando a transacao diretamente, pois nao achamos um servico
+    # que pudesse receber o status para alterar la
     def alterarTransacao(self, transacao:Transacao):
         url = HOST_GERENCIADOR + SERVICE_TRANSACAO + "/" + str(transacao.id) + "/" + str(transacao.status)
         req.post(url=url)
