@@ -42,8 +42,10 @@ class Validador:
         if transacao.remetente in Validador.remetentes_bloqueados:
             tempo_bloqueio = Validador.remetentes_bloqueados[transacao.remetente]
             if horario_atual < tempo_bloqueio:
-                transacao.status = 3  # Código para transação bloqueada
+                transacao.status = 2  # Código para transação bloqueada
                 return
+            else:
+                Validador.remetentes_bloqueados.pop(transacao.remetente)
 
         # Verificar se o valor na conta do remetente é maior ou igual ao valor da transação
         if (self.valor_conta_rem >= transacao.valor) and (
@@ -56,7 +58,7 @@ class Validador:
             transacao.status = 2
             # Verificar se a quantidade de transações excede 1000
             if self.qtde_trans > 1000:
-                tempo_bloqueio_segundos = (self.qtde_trans % 1000) * 60  # Adiciona 1 minuto de bloqueio para cada 1000 transações
+                tempo_bloqueio_segundos = round(self.qtde_trans/1000) * 60  # Adiciona 1 minuto de bloqueio para cada 1000 transações
                 self.adicionar_bloqueio(transacao.remetente, horario_atual, tempo_bloqueio_segundos)
 
     # Método para enviar a validação da transação ao seletor
