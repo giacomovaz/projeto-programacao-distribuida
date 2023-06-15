@@ -11,6 +11,8 @@ class Validador:
     # Declaração das propriedades da classe
     ip: str
     chave: str
+    
+    is_inicializado: bool = False
 
     valor_conta_rem: int
     horario_ultima_trans: datetime

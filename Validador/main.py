@@ -4,8 +4,7 @@ from flask import Flask, request, Response
 from validador import Validador
 
 # horario das transacoes possuem miliseg
-FORMAT_DATA_MILISEG = "%Y-%m-%d %H:%M:%S.%f"
-FORMAT_DATA = "%Y-%m-%d %H:%M:%S"
+FORMAT_DATA = "%Y-%m-%d %H:%M:%S.%f"
 
 validador = Validador()
 app = Flask(__name__)
@@ -22,6 +21,7 @@ def mensagemSucesso(mensagem:str):
 def incializarValidador(ip, chave):
     validador.ip = ip
     validador.chave = chave
+    validador.is_inicializado = True
     return mensagemSucesso("Validador Inicializado")
 
 @app.route('/transacao/validar', methods=['POST'])
@@ -31,11 +31,11 @@ def validarTransacao():
     print(request.form)
     ret = request.form
     transacao = Transacao(id=int(ret['id']), valor=int(ret['valor']), rem=int(ret['id_rem']),
-                          horario=datetime.strptime(ret['horario_trans'], FORMAT_DATA_MILISEG))
+                          horario=datetime.strptime(ret['horario_trans'], FORMAT_DATA))
     
     validador.qtde_trans = int(ret['trans_rem'])
     validador.valor_conta_rem = int(ret['conta_rem'])
-    validador.horario_ultima_trans = datetime.strptime(ret['horario_ult_trans'], FORMAT_DATA_MILISEG)
+    validador.horario_ultima_trans = datetime.strptime(ret['horario_ult_trans'], FORMAT_DATA)
     
     try:
         validador.valida_transacao(transacao=transacao, horario_atual=datetime.strptime(ret['horario_atual'], FORMAT_DATA))
@@ -46,7 +46,10 @@ def validarTransacao():
 
 @app.route('/ping', methods=['GET'])
 def ping():
-    return Response()
+    if validador.is_inicializado:
+        return Response(status=200)
+    else:
+        return Response(status=500)
 
 
 app.run(host="127.0.0.3", debug=True)

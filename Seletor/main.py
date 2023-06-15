@@ -103,8 +103,7 @@ def validarTransacao(ip, id, status, chave):
             seletor.validarChave(ip=ip, chave=chave)
             
             transacao.adicionarValidacao(ip=ip, status=status)
-            
-            print(transacao.qtd_validando, transacao.qtd_validado)
+            print(f'lista ips validando {transacao.lista_validacao}')
             
             if transacao.isTransacaoProntaValidar():
                 seletor.validarTransacao(transacao=transacao)

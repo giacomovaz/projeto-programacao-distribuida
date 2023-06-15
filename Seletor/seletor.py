@@ -4,8 +4,8 @@ import json
 from transacao import Transacao, Cliente
 import random as rnd
 import requests as req
-from datetime import datetime
-import win32.win32api as win
+from datetime import datetime, timedelta
+from time import sleep
 
 # definir IP do Gerenciador
 HOST_GERENCIADOR = "http://127.0.0.2:5000"
@@ -88,8 +88,12 @@ class Validador:
     def isAtivo(self):
         try:
             url = HTTP + self.ip + SERVICE_PING
-            req.get(url=url)
-            return True
+            ret = req.get(url=url)
+            if ret.status_code == 200:
+                return True
+            else:
+                print(f'Validador {self.ip} nao inicializado')
+                return False
         except Exception as e:
             print(str(e))
             return False
@@ -239,8 +243,18 @@ class Seletor:
     def enviarTransacaoValidadores(self, transacao:Transacao):
         ult_trans = Transacao.buscarUltima()
         transacao.cadastraDb()
-        validadores_ativos = self.buscarValidadoresAtivos()
-        qtd_ativos = len(validadores_ativos)
+        qtd_ativos = 0
+        horario_atual = self.horarioAtualGerenciador()
+        tempo_tentando = horario_atual + timedelta(seconds=60)
+        
+        # tenta buscar pelo menos 3 validadores ativos por 1min
+        while qtd_ativos < 3 and tempo_tentando > horario_atual:
+            validadores_ativos = self.buscarValidadoresAtivos()
+            qtd_ativos = len(validadores_ativos)
+            if qtd_ativos < 3:
+                sleep(5)
+                horario_atual = self.horarioAtualGerenciador()
+        
         if qtd_ativos < 3:
             raise Exception("Quantidade insuficiente de validadores")
         
@@ -249,6 +263,7 @@ class Seletor:
         remetente.tipo = "rem"
         transacao.remetente = remetente
         horario_atual = self.horarioAtualGerenciador()
+        print(f'HORARIOS: {ult_trans.horario}, {transacao.horario}, {horario_atual}')
         if qtd_ativos in (3, 5):
             # definindo quanto validadores irao validar
             transacao.qtd_validando = qtd_ativos
@@ -283,7 +298,7 @@ class Seletor:
     def validarTransacao(self, transacao:Transacao):
         transacao.validarTransacao()
         print(transacao.status)
-        
+        print(transacao.ip_corretos)
         for ip in transacao.ip_incorretos:
             v = self.buscarValidador(ip=ip)
             v.acrescentarFlag()
@@ -321,7 +336,7 @@ class Seletor:
     def horarioAtualGerenciador(self):
         url = HOST_GERENCIADOR + SERVICE_HORA
 
-        formato = "%a, %d %b %Y %H:%M:%S %Z"
+        formato = "%Y-%m-%d %H:%M:%S.%f"
         ret = req.get(url=url).json()
         dt = datetime.strptime(ret, formato)
         return dt
