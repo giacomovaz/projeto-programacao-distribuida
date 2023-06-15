@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 import json
 from transacao import Transacao
@@ -7,15 +7,25 @@ import time
 HOST_SELETOR = "http://127.0.0.1:5000"
 
 # Definição da classe Validador
-class Validador: 
+class Validador:
     # Declaração das propriedades da classe
     ip: str
-    chave: str    
+    chave: str
 
     valor_conta_rem: int
     horario_ultima_trans: datetime
     qtde_trans: int
     limite_transacoes: bool = False
+
+    # variavel armazenar remetentes bloqueados e seus tempos de bloqueio
+    remetentes_bloqueados = {}
+
+
+    # funcao de bloqueio de remetentes
+    @classmethod
+    def adicionar_bloqueio(cls, remetente, horario_bloqueio, tempo_bloqueio_segundos):
+        tempo_bloqueio = horario_bloqueio + timedelta(seconds=tempo_bloqueio_segundos)
+        cls.remetentes_bloqueados[remetente] = tempo_bloqueio
 
     # Construtor da classe
     def __init__(self, ip=0, chave=""):
@@ -28,6 +38,13 @@ class Validador:
         # Obter o horário atual
         horario_atual = datetime.now()
 
+        # Verificar se o remetente está bloqueado
+        if transacao.remetente in Validador.remetentes_bloqueados:
+            tempo_bloqueio = Validador.remetentes_bloqueados[transacao.remetente]
+            if horario_atual < tempo_bloqueio:
+                transacao.status = 3  # Código para transação bloqueada
+                return
+
         # Verificar se o valor na conta do remetente é maior ou igual ao valor da transação
         if (self.valor_conta_rem >= transacao.valor) and (
             # Verificar se o horário da transação é depois do horário da última transação e antes ou no mesmo horário atual
@@ -37,6 +54,10 @@ class Validador:
             transacao.status = 1
         else:
             transacao.status = 2
+            # Verificar se a quantidade de transações excede 1000
+            if self.qtde_trans > 1000:
+                tempo_bloqueio_segundos = (self.qtde_trans % 1000) * 60  # Adiciona 1 minuto de bloqueio para cada 1000 transações
+                self.adicionar_bloqueio(transacao.remetente, horario_atual, tempo_bloqueio_segundos)
 
     # Método para enviar a validação da transação ao seletor
     def enviar_validacao(self, transacao:Transacao):
