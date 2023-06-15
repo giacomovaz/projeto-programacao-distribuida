@@ -3,6 +3,9 @@ from seletor import Seletor
 from transacao import Transacao
 from flask import Flask, render_template, request
 import sys, pyuac
+from datetime import datetime
+
+FORMAT_DATA = "%Y-%m-%d %H:%M:%S.%f"
 
 def criaTabela():
     db = Database()
@@ -69,14 +72,17 @@ def removerValidador(ip, chave):
 # chamada feita pelo Gerenciador
 @app.route('/transacao/', methods=["POST"])
 def enviaTransacao():
+    print("ENVIA TRANSACAO")
     if request.method == "POST":
         transacao = Transacao(id=int(request.form["id"]), rem=int(request.form["remetente"]), reb=int(request.form["recebedor"]),
-                            valor=int(request.form["valor"]), status=int(request.form["status"]), horario=request.form["horario"])
+                            valor=int(request.form["valor"]), status=int(request.form["status"]), horario=datetime.strptime(request.form["horario"], FORMAT_DATA))
         try:
-            seletor.enviarTransacaoValidadores(transacao=transacao)
             seletor.transacoes.append(transacao) 
+            seletor.enviarTransacaoValidadores(transacao=transacao)
             return mensagemSucesso("Inicio Validacao")
         except Exception as e:
+            # se deu exception em algum ponto, nao inicializara a validacao
+            seletor.removerTransacao(transacao=transacao) 
             return mensagemErro(str(e))
 
     else:
@@ -86,6 +92,7 @@ def enviaTransacao():
 # chamada feita pelos Validadores
 @app.route('/transacao/<string:ip>/<int:id>/<int:status>/<string:chave>', methods=["POST"])
 def validarTransacao(ip, id, status, chave):
+    print("VALIDA TRANSACAO")
     if request.method == "POST":
         try:
             transacao = seletor.buscarTransacao(i=id)
@@ -98,6 +105,8 @@ def validarTransacao(ip, id, status, chave):
             seletor.validarChave(ip=ip, chave=chave)
             
             transacao.adicionarValidacao(ip=ip, status=status)
+            
+            print(transacao.qtd_validando, transacao.qtd_validado)
             
             if transacao.isTransacaoProntaValidar():
                 seletor.validarTransacao(transacao=transacao)

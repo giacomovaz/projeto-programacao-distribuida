@@ -16,7 +16,7 @@ class Transacao:
     ip_incorretos:list
     ip_corretos:list
     
-    def __init__(self, id, rem, reb, valor, status, horario):
+    def __init__(self, id=0, rem=0, reb=0, valor=0, status=0, horario=None):
         self.id = id
         self.remetente = rem
         self.recebedor = reb

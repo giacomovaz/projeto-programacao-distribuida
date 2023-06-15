@@ -11,9 +11,12 @@ import win32.win32api as win
 # definir IP do Gerenciador
 HOST_GERENCIADOR = "http://127.0.0.2:5000"
 
+HTTP = "http://"
+
 SERVICE_TRANSACAO = "/transactions"
 SERVICE_CLIENTE = "/cliente"
 SERVICE_HORA = "/hora"
+SERVICE_VALIDADOR_VALIDA = "/transacao/validar"
 
 class Validador:
     id: int
@@ -56,8 +59,8 @@ class Validador:
         query = "UPDATE VALIDADORES SET "
         param = 0
 
-        if campo == "qtd_moedas":
-            query = query + "qtd_moedas = ?"
+        if campo == "qtd_moeda":
+            query = query + "qtd_moeda = ?"
             param = [self.qtd_moeda]
         elif campo == "qtd_flags":
             query = query + "qtd_flags = ?"
@@ -85,9 +88,22 @@ class Validador:
         # TODO FAZER LOGICA DE VERIFICAR SE ESTA ATIVO
         return True
     
-    def enviarTransacao(self, transacao:Transacao):
+    def enviarTransacao(self, transacao:Transacao, ultima_transacao:Transacao):
         # TODO ENVIAR TRANSACAO PARA OS VALIDADORES
+        # if self.ip != "127.0.0.3:5000":
+        #     return
+        
         transacao.ip_validacao.append(self.ip)
+        data = {
+            'id': transacao.id,
+            'valor': transacao.valor,
+            'trans_rem': transacao.remetente.qtdTransacoesUltimoSegudo(),
+            'horario_trans': transacao.horario,
+            'horario_ult_trans': ultima_transacao.horario,
+            'conta_rem': transacao.remetente.qtd_moeda
+        }
+        url = HTTP + self.ip + SERVICE_VALIDADOR_VALIDA
+        req.post(url=url, data=data)
         print(f'qtd_transacao remetente: {transacao.remetente.qtdTransacoesUltimoSegudo()}')
         # print(self.toJson())
         
@@ -106,7 +122,7 @@ class Validador:
         
     def acrescentarMoeda(self, qtd_moeda):
         self.qtd_moeda = self.qtd_moeda + qtd_moeda
-        self.editarDb("qtd_moedas")
+        self.editarDb("qtd_moeda")
 
 
 class Seletor:
@@ -186,13 +202,18 @@ class Seletor:
         db.save()
         self.total_moedas = moedas
         
-    def quantidadeValidadores(self):
-        return len(self.validadores)
+    def ultimoIdCadastrado(self):
+        db = Database()
+        ret = db.execute("SELECT id FROM VALIDADORES ORDER BY id DESC LIMIT 1").fetchone()
+        if ret == None:
+            return 0
+        else:
+            return ret[0]
     
     def novoValidador(self, qtdMoeda:int, ip:str):
-        qtd_validadores = self.quantidadeValidadores()
-        chave_segura = f'chave_segura{qtd_validadores}'
-        validador = Validador(id=qtd_validadores, qtd_moeda=qtdMoeda, qtd_flags=0,ip=ip, chave=chave_segura)
+        id = self.ultimoIdCadastrado() + 1
+        chave_segura = f'chave_segura{id}'
+        validador = Validador(id=id, qtd_moeda=qtdMoeda, qtd_flags=0,ip=ip, chave=chave_segura)
         try:
             validador.cadastraDb()
         except IntegrityError:
@@ -214,6 +235,7 @@ class Seletor:
         return validadores_ativos
 
     def enviarTransacaoValidadores(self, transacao:Transacao):
+        ult_trans = Transacao.buscarUltima()
         transacao.cadastraDb()
         validadores_ativos = self.buscarValidadoresAtivos()
         qtd_ativos = len(validadores_ativos)
@@ -221,22 +243,25 @@ class Seletor:
             raise Exception("Quantidade insuficiente de validadores")
         
         definindoChancesValidadores(validadores_ativos)
+        remetente = self.buscarCliente(transacao.remetente.id)
+        remetente.tipo = "rem"
+        transacao.remetente = remetente
         if qtd_ativos in (3, 5):
-            for v in self.validadores:
-                v.enviarTransacao(transacao=transacao)
             transacao.qtd_validando = qtd_ativos
+            for v in self.validadores:
+                v.enviarTransacao(transacao=transacao, ultima_transacao=ult_trans)
         elif qtd_ativos < 5:
+            transacao.qtd_validando = 3
             for _ in range(3):
                 v = rnd.choices(population=validadores_ativos, weights=listaChances(validadores_ativos))
-                v[0].enviarTransacao(transacao=transacao)
+                v[0].enviarTransacao(transacao=transacao, ultima_transacao=ult_trans)
                 validadores_ativos.remove(v[0])
-            transacao.qtd_validando = 3
         else:
+            transacao.qtd_validando = 5
             for _ in range(5):
                 v = rnd.choices(population=validadores_ativos, weights=listaChances(validadores_ativos))
-                v[0].enviarTransacao(transacao=transacao)
+                v[0].enviarTransacao(transacao=transacao, ultima_transacao=ult_trans)
                 validadores_ativos.remove(v[0])
-            transacao.qtd_validando = 5
         
     def distribuirGanhos(self, qtd_moeda, transacao:Transacao):
         porcentagem_seletor = 0.5

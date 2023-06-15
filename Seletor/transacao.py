@@ -5,6 +5,8 @@ from database import Database
 TIPO_REMETENTE = "rem"
 TIPO_RECEBEDOR = "reb"
 
+FORMAT_DATA = "%Y-%m-%d %H:%M:%S.%f"
+
 class Cliente:
     
     id: int
@@ -56,17 +58,13 @@ class Transacao:
     ip_incorretos:list
     ip_corretos:list
     
-    def __init__(self, id, rem, reb, valor, status, horario):
+    def __init__(self, id=0, rem=0, reb=0, valor=0, status=0, horario=None):
         self.id = id
         self.remetente = Cliente(id=rem, tipo=TIPO_REMETENTE)
         self.recebedor = Cliente(id=reb, tipo=TIPO_RECEBEDOR)
         self.valor = valor
         self.status = status
         self.horario = horario
-        
-    def toJson(self):
-        return json.dumps(self, default=lambda o: o.__dict__, 
-            sort_keys=True, indent=4)
     
     # ip valido para realizar a validacao da transacao
     def isIpValido(self, ip):
@@ -78,7 +76,9 @@ class Transacao:
         param = [self.id, self.remetente.id, self.recebedor.id, self.horario]
         db.execute(query, param)
         db.save()
-        
+
+    
+
     def adicionarValidacao(self, ip, status):
         if self.isIpValido(ip=ip):
             self.qtd_validado = self.qtd_validado + 1
@@ -107,3 +107,13 @@ class Transacao:
     def isTransacaoProntaValidar(self):
         # se todos os validadores ja tiverem enviado suas respostas
         return self.qtd_validado == self.qtd_validando
+    
+    @staticmethod
+    def buscarUltima():
+        db = Database()
+        ret = db.execute("SELECT * FROM TRANSACOES ORDER BY id DESC LIMIT 1").fetchone()
+        if ret == None:
+            return Transacao()
+        else:
+            return Transacao(id=ret[0], rem=ret[1], reb=ret[2], horario=datetime.strptime(ret[3], FORMAT_DATA))
+        
