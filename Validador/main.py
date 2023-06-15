@@ -1,6 +1,6 @@
 from transacao import Transacao
 from datetime import datetime
-from flask import Flask, request
+from flask import Flask, request, Response
 from validador import Validador
 
 # horario das transacoes possuem miliseg
@@ -43,6 +43,11 @@ def validarTransacao():
     except Exception as e:
         return mensagemErro(str(e))
     return mensagemSucesso("Transacao Julgada")
+
+@app.route('/ping', methods=['GET'])
+def ping():
+    return Response()
+
 
 app.run(host="127.0.0.3", debug=True)
 

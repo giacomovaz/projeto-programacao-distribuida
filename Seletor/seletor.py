@@ -16,6 +16,7 @@ SERVICE_TRANSACAO = "/transactions"
 SERVICE_CLIENTE = "/cliente"
 SERVICE_HORA = "/hora"
 SERVICE_VALIDADOR_VALIDA = "/transacao/validar"
+SERVICE_PING = "/ping"
 
 class Validador:
     id: int
@@ -83,9 +84,15 @@ class Validador:
             
         return Validador(id=ret[0], qtd_moeda=ret[1], qtd_flags=ret[2], ip=ret[3], qtd_transacao_correta=ret[4], chave=ret[5])
     
+    # verificando se a instancia esta de pe
     def isAtivo(self):
-        # TODO FAZER LOGICA DE VERIFICAR SE ESTA ATIVO
-        return True
+        try:
+            url = HTTP + self.ip + SERVICE_PING
+            req.get(url=url)
+            return True
+        except Exception as e:
+            print(str(e))
+            return False
     
     def enviarTransacao(self, transacao:Transacao, ultima_transacao:Transacao, horario_atual:datetime):        
         transacao.ip_validacao.append(self.ip)
