@@ -15,7 +15,6 @@ class Validador:
     valor_conta_rem: int
     horario_ultima_trans: datetime
     qtde_trans: int
-    limite_transacoes: bool = False
 
     # variavel armazenar remetentes bloqueados e seus tempos de bloqueio
     remetentes_bloqueados = {}
@@ -34,9 +33,7 @@ class Validador:
         self.chave = chave
 
     # Método para validar a transação
-    def valida_transacao(self, transacao: Transacao):
-        # Obter o horário atual
-        horario_atual = datetime.now()
+    def valida_transacao(self, transacao: Transacao, horario_atual:datetime):
 
         # Verificar se o remetente está bloqueado
         if transacao.remetente in Validador.remetentes_bloqueados:
@@ -65,7 +62,5 @@ class Validador:
     def enviar_validacao(self, transacao:Transacao):
         url = HOST_SELETOR + f"/transacao/{self.ip}/{transacao.id}/{transacao.status}/{self.chave}"
         response = requests.post(url)
-        if response.status_code == 200:
-            print("Validação enviada com sucesso.")
-        else:
-            print("Erro ao enviar a validação.")
+        if response.status_code != 200:
+            raise Exception("Erro ao enviar a validação.")

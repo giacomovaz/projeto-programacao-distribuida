@@ -5,7 +5,6 @@ from transacao import Transacao, Cliente
 import random as rnd
 import requests as req
 from datetime import datetime
-from time import strptime, mktime
 import win32.win32api as win
 
 # definir IP do Gerenciador
@@ -88,24 +87,20 @@ class Validador:
         # TODO FAZER LOGICA DE VERIFICAR SE ESTA ATIVO
         return True
     
-    def enviarTransacao(self, transacao:Transacao, ultima_transacao:Transacao):
-        # TODO ENVIAR TRANSACAO PARA OS VALIDADORES
-        # if self.ip != "127.0.0.3:5000":
-        #     return
-        
+    def enviarTransacao(self, transacao:Transacao, ultima_transacao:Transacao, horario_atual:datetime):        
         transacao.ip_validacao.append(self.ip)
         data = {
             'id': transacao.id,
             'valor': transacao.valor,
-            'trans_rem': transacao.remetente.qtdTransacoesUltimoSegudo(),
+            'trans_rem': transacao.remetente.qtdTransacoesUltimoSegudo(horario_atual=horario_atual),
             'horario_trans': transacao.horario,
             'horario_ult_trans': ultima_transacao.horario,
-            'conta_rem': transacao.remetente.qtd_moeda
+            'conta_rem': transacao.remetente.qtd_moeda,
+            'id_rem' : transacao.remetente.id,
+            'horario_atual' : horario_atual
         }
         url = HTTP + self.ip + SERVICE_VALIDADOR_VALIDA
         req.post(url=url, data=data)
-        print(f'qtd_transacao remetente: {transacao.remetente.qtdTransacoesUltimoSegudo()}')
-        # print(self.toJson())
         
     def acrescentarFlag(self):
         self.qtd_flags = self.qtd_flags + 1
@@ -140,7 +135,7 @@ class Seletor:
                 return t
         return None
     
-    def removerTransacao(self, i:int, transacao:Transacao=None):
+    def removerTransacao(self, i:int=0, transacao:Transacao=None):
         if transacao == None:
             for t in self.transacoes:
                 if t.id == i:
@@ -246,21 +241,25 @@ class Seletor:
         remetente = self.buscarCliente(transacao.remetente.id)
         remetente.tipo = "rem"
         transacao.remetente = remetente
+        horario_atual = self.horarioAtualGerenciador()
         if qtd_ativos in (3, 5):
+            # definindo quanto validadores irao validar
             transacao.qtd_validando = qtd_ativos
             for v in self.validadores:
-                v.enviarTransacao(transacao=transacao, ultima_transacao=ult_trans)
+                v.enviarTransacao(transacao=transacao, ultima_transacao=ult_trans, horario_atual=horario_atual)
         elif qtd_ativos < 5:
+            # definindo quanto validadores irao validar
             transacao.qtd_validando = 3
             for _ in range(3):
                 v = rnd.choices(population=validadores_ativos, weights=listaChances(validadores_ativos))
-                v[0].enviarTransacao(transacao=transacao, ultima_transacao=ult_trans)
+                v[0].enviarTransacao(transacao=transacao, ultima_transacao=ult_trans, horario_atual=horario_atual)
                 validadores_ativos.remove(v[0])
         else:
+            # definindo quanto validadores irao validar
             transacao.qtd_validando = 5
             for _ in range(5):
                 v = rnd.choices(population=validadores_ativos, weights=listaChances(validadores_ativos))
-                v[0].enviarTransacao(transacao=transacao, ultima_transacao=ult_trans)
+                v[0].enviarTransacao(transacao=transacao, ultima_transacao=ult_trans, horario_atual=horario_atual)
                 validadores_ativos.remove(v[0])
         
     def distribuirGanhos(self, qtd_moeda, transacao:Transacao):
@@ -304,7 +303,6 @@ class Seletor:
         
         cliente = Cliente()
         cliente.preencherCliente(ret)
-        print(cliente.toJson())
         return cliente
     
     def removerValidador(self, validador:Validador, is_excluido_por_flags:bool=False):
@@ -313,17 +311,14 @@ class Seletor:
         self.validadores.remove(validador)
         validador.excluirDb()
         
-    def atualizarHorario(self):
+    def horarioAtualGerenciador(self):
         url = HOST_GERENCIADOR + SERVICE_HORA
 
         formato = "%a, %d %b %Y %H:%M:%S %Z"
         ret = req.get(url=url).json()
-        a = strptime(ret, formato)
-        dt = datetime.fromtimestamp(mktime(a))
-        print(dt)
-        print(dt.year, dt.month, dt.isoweekday(), dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
-        # def SetSystemTime(year, month, dayOfWeek, day, hour, minute, second, millseconds): ...
-        win.SetSystemTime(dt.year, dt.month, dt.weekday(), dt.day, dt.hour, dt.minute, dt.second, dt.microsecond)
+        dt = datetime.strptime(ret, formato)
+        return dt
+        
 
 # chamadas aqui em baixo por estarmos usando lista 
 # que nao vem do self do Seletor
@@ -344,6 +339,7 @@ def definindoChancesValidadores(validadores:list[Validador]):
         else:
             v.chance_escolha = chance
             
+# lista das chances dos validadores
 def listaChances(validadores:list[Validador]):
     chances = []
     for v in validadores:

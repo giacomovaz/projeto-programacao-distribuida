@@ -72,14 +72,13 @@ def removerValidador(ip, chave):
 # chamada feita pelo Gerenciador
 @app.route('/transacao/', methods=["POST"])
 def enviaTransacao():
-    print("ENVIA TRANSACAO")
     if request.method == "POST":
         transacao = Transacao(id=int(request.form["id"]), rem=int(request.form["remetente"]), reb=int(request.form["recebedor"]),
                             valor=int(request.form["valor"]), status=int(request.form["status"]), horario=datetime.strptime(request.form["horario"], FORMAT_DATA))
         try:
             seletor.transacoes.append(transacao) 
             seletor.enviarTransacaoValidadores(transacao=transacao)
-            return mensagemSucesso("Inicio Validacao")
+            return mensagemSucesso("Transacao enviada")
         except Exception as e:
             # se deu exception em algum ponto, nao inicializara a validacao
             seletor.removerTransacao(transacao=transacao) 
@@ -92,7 +91,6 @@ def enviaTransacao():
 # chamada feita pelos Validadores
 @app.route('/transacao/<string:ip>/<int:id>/<int:status>/<string:chave>', methods=["POST"])
 def validarTransacao(ip, id, status, chave):
-    print("VALIDA TRANSACAO")
     if request.method == "POST":
         try:
             transacao = seletor.buscarTransacao(i=id)
@@ -126,13 +124,6 @@ def validarTransacao(ip, id, status, chave):
 def page_not_found(erro):
     return render_template('page_not_found.html'), 404
 
-if sys.platform.startswith('linux'):
-    app.run(host='127.0.0.1', debug=True)
 
-elif  sys.platform=='win32':
-    # if not pyuac.isUserAdmin():
-    #     pyuac.runAsAdmin()
-    # else:
-    #     seletor.atualizarHorario()
-        app.run(host='127.0.0.1', debug=True)
+app.run(host='127.0.0.1', debug=True)
         

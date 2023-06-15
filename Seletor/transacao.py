@@ -34,10 +34,9 @@ class Cliente:
         return json.dumps(self, default=lambda o: o.__dict__, 
             sort_keys=True, indent=4)
         
-    def qtdTransacoesUltimoSegudo(self):
+    def qtdTransacoesUltimoSegudo(self, horario_atual:datetime):
         db = Database()
         sql = f"SELECT COUNT(*) FROM TRANSACOES WHERE id_{self.tipo} = ? AND horario <= ? AND horario > ?"
-        horario_atual = datetime.now()
         horario_ultimo_segundo = horario_atual - timedelta(seconds=1)
         val = [1, horario_atual, horario_ultimo_segundo]
         ret = db.execute(sql, val).fetchone()[0]
