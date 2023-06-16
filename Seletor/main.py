@@ -2,7 +2,6 @@ from database import Database
 from seletor import Seletor
 from transacao import Transacao
 from flask import Flask, render_template, request
-import sys, pyuac
 from datetime import datetime
 
 FORMAT_DATA = "%Y-%m-%d %H:%M:%S.%f"

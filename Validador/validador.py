@@ -48,11 +48,17 @@ class Validador:
 
         # Verificar se o valor na conta do remetente é maior ou igual ao valor da transação
         if (self.valor_conta_rem >= transacao.valor) and (
-            # Verificar se o horário da transação é depois do horário da última transação e antes ou no mesmo horário atual
-            self.horario_ultima_trans < transacao.horario <= horario_atual) and (
             # Verificar se a quantidade de transações é menor que 1000
             self.qtde_trans < 1000):
-            transacao.status = 1
+            horario_valido:bool
+            if self.horario_ultima_trans == None:
+                horario_valido = transacao.horario <= horario_atual
+            else:
+                horario_valido = self.horario_ultima_trans < transacao.horario <= horario_atual
+
+            # Verificar se o horário da transação é depois do horário da última transação e antes ou no mesmo horário atual
+            if horario_valido:
+                transacao.status = 1
         else:
             transacao.status = 2
             # Verificar se a quantidade de transações excede 1000

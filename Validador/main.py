@@ -33,8 +33,11 @@ def validarTransacao():
     
     validador.qtde_trans = int(ret['trans_rem'])
     validador.valor_conta_rem = int(ret['conta_rem'])
-    validador.horario_ultima_trans = datetime.strptime(ret['horario_ult_trans'], FORMAT_DATA)
-    
+    if ret['horario_ult_trans'] != None:
+        validador.horario_ultima_trans = datetime.strptime(ret['horario_ult_trans'], FORMAT_DATA)
+    else:
+        validador.horario_ultima_trans = None
+
     try:
         validador.valida_transacao(transacao=transacao, horario_atual=datetime.strptime(ret['horario_atual'], FORMAT_DATA))
         validador.enviar_validacao(transacao=transacao)
